@@ -16,8 +16,10 @@ export interface SchoolProperties {
   sector: string;
   enrollment: number;
   urban_rural: string;
-  altitude_m: number;
+  altitude_m: number | null;
   tmax_avg_c: number;
+  tmax_cmip6_2020_c?: number | null;
+  tmax_cmip6_2050_c?: number | null;
   pet_avg_c: number;
   wbgt_avg_c: number;
   heat_days_30: number;

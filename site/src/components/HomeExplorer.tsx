@@ -13,8 +13,9 @@ interface Props {
   dailyByCountry: Record<CountryCode, DailyClimateSeries>;
   globalDistribution: {
     byCountry: PieSlice[];
-    byLevel: PieSlice[];
-    bySector: PieSlice[];
+    byEnrollmentSize: PieSlice[];
+    bySchoolType: PieSlice[];
+    byZone: PieSlice[];
   };
   mapCountries: CountryMapInfo[];
   schoolFeatures: SchoolFeature[];

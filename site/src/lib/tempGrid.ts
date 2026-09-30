@@ -13,16 +13,18 @@ export const DEFAULT_TEMP_SCENARIO: TempScenarioId = "2000-2025";
 
 export const TEMP_GRID_SOURCE = "temp-grid";
 export const TEMP_GRID_LAYER = "temp-grid-heat";
+export const TEMP_GRID_CIRCLE_LAYER = "temp-grid-cells";
 
 /** Escala de color Tmax (°C) — compartida entre mapa y leyenda. */
+/** Escala térmica EscuelasCool (guía de marca, anclada en lápices del logo). */
 export const TEMP_COLOR_STOPS = [
-  { value: 12, color: "#313695" },
-  { value: 18, color: "#4575b4" },
-  { value: 22, color: "#91bfdb" },
-  { value: 26, color: "#fee090" },
-  { value: 30, color: "#fc8d59" },
-  { value: 34, color: "#d73027" },
-  { value: 38, color: "#a50026" },
+  { value: 12, color: "#023155" },
+  { value: 18, color: "#0653a5" },
+  { value: 22, color: "#05b5dc" },
+  { value: 26, color: "#9adaeb" },
+  { value: 30, color: "#fbb501" },
+  { value: 34, color: "#f86601" },
+  { value: 38, color: "#b40b0e" },
 ] as const;
 
 export const TEMP_LEGEND_MIN = TEMP_COLOR_STOPS[0].value;
@@ -85,21 +87,21 @@ export function tempGridHeatmapPaint(): maplibregl.HeatmapLayerSpecification["pa
       ["linear"],
       ["heatmap-density"],
       0,
-      "rgba(49,70,149,0)",
+      "rgba(2,49,85,0)",
       0.08,
-      "rgba(49,70,149,0.16)",
+      "rgba(2,49,85,0.18)",
       0.2,
-      "rgba(69,117,180,0.28)",
+      "rgba(6,83,165,0.28)",
       0.35,
-      "rgba(145,191,219,0.34)",
+      "rgba(5,181,220,0.34)",
       0.5,
-      "rgba(254,224,144,0.38)",
+      "rgba(251,181,1,0.38)",
       0.65,
-      "rgba(252,141,89,0.42)",
+      "rgba(248,102,1,0.42)",
       0.8,
-      "rgba(215,48,39,0.46)",
+      "rgba(249,65,2,0.46)",
       1,
-      "rgba(165,0,38,0.5)",
+      "rgba(180,11,14,0.52)",
     ],
   };
 }
@@ -167,7 +169,7 @@ export function raiseLayersAboveHeatmap(
   map: maplibregl.Map,
   layerIds: readonly string[]
 ) {
-  if (!map.getLayer(TEMP_GRID_LAYER)) return;
+  if (!map.getLayer(TEMP_GRID_LAYER) && !map.getLayer(TEMP_GRID_CIRCLE_LAYER)) return;
   const beforeLabels = findMapLabelAnchor(map);
   for (const layerId of layerIds) {
     if (map.getLayer(layerId)) {

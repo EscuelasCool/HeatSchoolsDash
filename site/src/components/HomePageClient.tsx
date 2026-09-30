@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchHomePageData, type HomePageData } from "@/lib/dataClient";
+import { preloadDefaultCmip6Layer } from "@/lib/cmip6";
 import HomeExplorer from "./HomeExplorer";
 
 export default function HomePageClient() {
@@ -9,6 +10,7 @@ export default function HomePageClient() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    void preloadDefaultCmip6Layer();
     fetchHomePageData()
       .then(setData)
       .catch((err: unknown) => {

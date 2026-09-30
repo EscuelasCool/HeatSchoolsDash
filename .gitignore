@@ -177,6 +177,18 @@ site/.dev.vars
 
 # Contract (local only)
 Contrato.md
+DATA_INTEGRATION_DECISIONS.md
+HeatSchools_Pipeline_KNIME_Style.pptx
+
+# Datos voluminosos (regenerar con pipeline/, no versionar)
+CMIP6_SouthAmerica/
+OUTPUT-GEO-School/
+HS-TEMP/
+pipeline/.venv/
+site/public/images/heatschools-logo.png
+site/public/data/historical/
+site/public/data/temp-grid/
+site/public/data/recent/
 .mypy_cache/
 .dmypy.json
 dmypy.json

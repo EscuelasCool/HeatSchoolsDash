@@ -1,0 +1,23 @@
+{
+  "country": "PE",
+  "resolution": "cmip6_ssp245_5y",
+  "source": "Media Tmax CMIP6 SSP2-4.5 en escuelas georeferenciadas",
+  "years": [
+    2020,
+    2025,
+    2030,
+    2035,
+    2040,
+    2045,
+    2050
+  ],
+  "tmax_c": [
+    24.36,
+    25.04,
+    24.87,
+    25.18,
+    25.4,
+    25.31,
+    25.77
+  ]
+}

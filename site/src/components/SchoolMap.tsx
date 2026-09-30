@@ -12,6 +12,9 @@ import { downloadCsv, downloadPng, shareLink } from "@/lib/export";
 import { installSchoolMapContent, onMapStyleReady } from "@/lib/schoolMapLayers";
 import { useTheme } from "./ThemeProvider";
 import ExportToolbar from "./ExportToolbar";
+import Cmip6TimeControl from "./Cmip6TimeControl";
+import type { Cmip6Selection } from "@/lib/cmip6";
+import { useCmip6HeatmapLayer } from "@/hooks/useCmip6HeatmapLayer";
 
 const POPUP_FADE_MS = 220;
 
@@ -61,7 +64,15 @@ export default function SchoolMap({
     mouseleaveClusters?: () => void;
   }>({});
   const [mapReady, setMapReady] = useState(false);
+  const [cmip6, setCmip6] = useState<Cmip6Selection>({
+    variable: "tasmax",
+    scenario: "ssp245",
+    year: 2020,
+  });
+  const [layerEpoch, setLayerEpoch] = useState(0);
   const { theme, mounted } = useTheme();
+
+  useCmip6HeatmapLayer(mapReady ? mapRef.current : null, mapReady, cmip6, layerEpoch);
 
   onClickRef.current = onSchoolClick;
   themeRef.current = theme;
@@ -91,7 +102,7 @@ export default function SchoolMap({
   }, [exportName]);
 
   const exportMapShare = useCallback(() => {
-    void shareLink(`Mapa HeatSchools · ${exportName}`, "Mapa de escuelas georeferenciadas.");
+    void shareLink(`Mapa EscuelasCool, ${exportName}`, "Mapa de escuelas georeferenciadas.");
   }, [exportName]);
 
   function restoreMapState(map: maplibregl.Map) {
@@ -100,6 +111,7 @@ export default function SchoolMap({
       theme: themeRef.current,
     });
     bindSchoolInteractions(map);
+    setLayerEpoch((e) => e + 1);
   }
 
   function fadeOutPopup(onDone: () => void) {
@@ -123,10 +135,10 @@ export default function SchoolMap({
     lngLat: maplibregl.LngLatLike
   ) {
     const name = String(props.school_name ?? "Escuela");
-    const admin1 = String(props.admin1 ?? "—");
-    const admin2 = String(props.admin2 ?? "—");
-    const sector = String(props.sector ?? "—");
-    const urbanRural = String(props.urban_rural ?? "—");
+    const admin1 = String(props.admin1 ?? "N/D");
+    const admin2 = String(props.admin2 ?? "N/D");
+    const sector = String(props.sector ?? "N/D");
+    const urbanRural = String(props.urban_rural ?? "N/D");
     const enrollment = props.enrollment != null ? Number(props.enrollment) : null;
     const schoolId = String(props.school_id ?? "");
     const hasClimateDetail = props.tmax_avg_c != null;
@@ -158,7 +170,7 @@ export default function SchoolMap({
         .setHTML(`
           <div class="map-popup">
             <strong>${name}</strong>
-            <p>${admin1}${admin2 !== "—" ? ` · ${admin2}` : ""}</p>
+            <p>${admin1}${admin2 !== "N/D" ? `, ${admin2}` : ""}</p>
             <ul>${climateRows}</ul>
             ${actionButton}
           </div>`)
@@ -307,6 +319,7 @@ export default function SchoolMap({
 
   return (
     <div className={`map-with-temp${variant === "tall" ? " map-with-temp--tall" : ""}`}>
+      <Cmip6TimeControl value={cmip6} onChange={setCmip6} />
       <div className="map-panel-top map-panel-top--export-only">
         <ExportToolbar onShare={exportMapShare} onPng={exportMapPng} onCsv={exportMapCsv} />
       </div>

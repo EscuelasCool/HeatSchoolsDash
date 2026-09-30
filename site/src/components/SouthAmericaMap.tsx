@@ -17,6 +17,9 @@ import {
 } from "@/lib/mapStyles";
 import { clusterStrokeForTheme, onMapStyleReady } from "@/lib/schoolMapLayers";
 import type { CountryCode, SchoolFeature } from "@/lib/types";
+import Cmip6TimeControl from "./Cmip6TimeControl";
+import type { Cmip6Selection } from "@/lib/cmip6";
+import { useCmip6HeatmapLayer } from "@/hooks/useCmip6HeatmapLayer";
 
 const SA_GEOJSON_URL = "/data/regions/south-america.geojson";
 const POPUP_FADE_MS = 220;
@@ -42,9 +45,9 @@ export interface CountryMapInfo {
   iso: ProjectCountryIso;
   label: string;
   count: number;
-  avgTmax: number;
-  avgWellbeing: number;
-  avgHealth: number;
+  avgTmax2020: number;
+  avgTmax2050: number;
+  totalEnrollment: number;
   blurb: string;
 }
 
@@ -105,7 +108,19 @@ export default function SouthAmericaMap({
   const styleGenerationRef = useRef(0);
   const mapThemeRef = useRef<"light" | "dark" | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [cmip6, setCmip6] = useState<Cmip6Selection>({
+    variable: "tasmax",
+    scenario: "ssp245",
+    year: 2020,
+  });
+  const [layerEpoch, setLayerEpoch] = useState(0);
+  const [mapFilter, setMapFilter] = useState<CountryCode | "all">("all");
+  const mapFilterRef = useRef<CountryCode | "all">("all");
   const { theme, mounted } = useTheme();
+
+  mapFilterRef.current = mapFilter;
+
+  useCmip6HeatmapLayer(mapReady ? mapRef.current : null, mapReady, cmip6, layerEpoch);
 
   schoolsRef.current = schoolFeatures;
   countriesRef.current = countries;
@@ -181,10 +196,10 @@ export default function SouthAmericaMap({
             <strong>${info.label}</strong>
             <p>${info.blurb}</p>
             <ul>
-              <li><span>Escuelas</span><b>${info.count}</b></li>
-              <li><span>Tmax prom.</span><b>${info.avgTmax}°C</b></li>
-              <li><span>Bienestar</span><b>${info.avgWellbeing}</b></li>
-              <li><span>Salud</span><b>${info.avgHealth}</b></li>
+              <li><span>Escuelas</span><b>${info.count.toLocaleString("es-CL")}</b></li>
+              <li><span>Matrícula</span><b>${info.totalEnrollment.toLocaleString("es-CL")}</b></li>
+              <li><span>Tmax 2020</span><b>${info.avgTmax2020}°C</b></li>
+              <li><span>Tmax 2050</span><b>${info.avgTmax2050}°C</b></li>
             </ul>
           </div>`)
         .addTo(map);
@@ -204,9 +219,14 @@ export default function SouthAmericaMap({
   }
 
   function schoolsGeoJSON(): GeoJSON.FeatureCollection {
+    const filter = mapFilterRef.current;
+    const features =
+      filter === "all"
+        ? schoolsRef.current
+        : schoolsRef.current.filter((f) => f.properties.country === filter);
     return {
       type: "FeatureCollection",
-      features: schoolsRef.current.map((f) => ({
+      features: features.map((f) => ({
         type: "Feature",
         geometry: f.geometry,
         properties: { ...f.properties },
@@ -279,7 +299,7 @@ export default function SouthAmericaMap({
         source: "schools",
         filter: ["has", "point_count"],
         paint: {
-          "circle-color": "#c05621",
+          "circle-color": "#0653a5",
           "circle-radius": ["step", ["get", "point_count"], 16, 20, 22, 50, 28, 100, 34],
           "circle-stroke-width": 2,
           "circle-stroke-color": clusterStroke,
@@ -312,7 +332,7 @@ export default function SouthAmericaMap({
         source: "schools",
         filter: ["!", ["has", "point_count"]],
         paint: {
-          "circle-color": "#e07a5f",
+          "circle-color": "#f86601",
           "circle-radius": 4,
           "circle-stroke-width": 1,
           "circle-stroke-color": clusterStroke,
@@ -431,6 +451,7 @@ export default function SouthAmericaMap({
   function restoreMapState(map: maplibregl.Map) {
     installCustomContent(map);
     bindInteractions(map);
+    setLayerEpoch((e) => e + 1);
 
     if (selectedRef.current) {
       const info = countriesRef.current.find((c) => c.code === selectedRef.current);
@@ -463,7 +484,7 @@ export default function SouthAmericaMap({
   }, []);
 
   const exportMapShare = useCallback(() => {
-    void shareLink("Mapa HeatSchools", "Mapa de escuelas en Chile, Colombia y Perú.");
+    void shareLink("Mapa EscuelasCool", "Mapa de escuelas en Chile, Colombia y Perú.");
   }, []);
 
   useEffect(() => {
@@ -479,8 +500,8 @@ export default function SouthAmericaMap({
           container: containerRef.current,
           style: getMapStyleUrl(themeRef.current),
           center: [-62, -21],
-          zoom: 2.82,
-          minZoom: 2.35,
+          zoom: 2.15,
+          minZoom: 2.15,
           maxZoom: 10,
           maxBounds: SA_MAX_BOUNDS,
           renderWorldCopies: false,
@@ -547,10 +568,58 @@ export default function SouthAmericaMap({
     const src = map.getSource("schools") as maplibregl.GeoJSONSource | undefined;
     if (!src) return;
     src.setData(schoolsGeoJSON());
-  }, [schoolFeatures]);
+  }, [schoolFeatures, mapFilter]);
+
+  function focusMapCountry(code: CountryCode | "all") {
+    setMapFilter(code);
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (code === "all") {
+      onSelectRef.current(null);
+      focusRef.current = null;
+      map.flyTo({ center: [-62, -21], zoom: 2.15, duration: 900 });
+      applyDimming(map, null);
+      fadeOutPopup(() => undefined);
+    } else {
+      onSelectRef.current(code);
+      focusRef.current = isoFromCode(code);
+      const view = MAP_COUNTRY_VIEWS[code];
+      map.flyTo({ center: view.center, zoom: view.zoom, duration: 900 });
+      applyDimming(map, focusRef.current);
+    }
+
+    if (map.isStyleLoaded() && map.getSource("schools")) {
+      const src = map.getSource("schools") as maplibregl.GeoJSONSource;
+      src.setData(schoolsGeoJSON());
+    }
+  }
 
   return (
     <div className="home-map-wrap">
+      <div className="map-country-filter" role="group" aria-label="Filtrar por país">
+        <span className="temp-scenario-label temp-scenario-label--lg">País</span>
+        <div className="temp-scenario-options">
+          <button
+            type="button"
+            className={`temp-scenario-btn temp-scenario-btn--lg ${mapFilter === "all" ? "active" : ""}`}
+            onClick={() => focusMapCountry("all")}
+          >
+            Todos
+          </button>
+          {(["CL", "CO", "PE"] as const).map((code) => (
+            <button
+              key={code}
+              type="button"
+              className={`temp-scenario-btn temp-scenario-btn--lg ${mapFilter === code ? "active" : ""}`}
+              onClick={() => focusMapCountry(code)}
+            >
+              {code === "CL" ? "Chile" : code === "CO" ? "Colombia" : "Perú"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <Cmip6TimeControl value={cmip6} onChange={setCmip6} />
       <div className="map-panel-top">
         <p className="panel-hint">
           <span className="hint-cursor" aria-hidden="true">↖</span>
@@ -568,4 +637,10 @@ const COUNTRY_CENTERS: Record<CountryCode, [number, number]> = {
   CL: [-71, -35],
   CO: [-74, 4.5],
   PE: [-75, -10],
+};
+
+const MAP_COUNTRY_VIEWS: Record<CountryCode, { center: [number, number]; zoom: number }> = {
+  CL: { center: [-71, -35], zoom: 3.85 },
+  CO: { center: [-74, 4.5], zoom: 4.85 },
+  PE: { center: [-75, -10], zoom: 4.65 },
 };

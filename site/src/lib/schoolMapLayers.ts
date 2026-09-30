@@ -59,7 +59,7 @@ export function installSchoolMapContent(
       source: "schools",
       filter: ["has", "point_count"],
       paint: {
-        "circle-color": "#c05621",
+        "circle-color": "#0653a5",
         "circle-radius": ["step", ["get", "point_count"], 16, 20, 22, 50, 28, 100, 34],
         "circle-stroke-width": 2,
         "circle-stroke-color": clusterStroke,
@@ -92,7 +92,7 @@ export function installSchoolMapContent(
       source: "schools",
       filter: ["!", ["has", "point_count"]],
       paint: {
-        "circle-color": "#e07a5f",
+        "circle-color": "#f86601",
         "circle-radius": 4,
         "circle-stroke-width": 1,
         "circle-stroke-color": clusterStroke,

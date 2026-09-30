@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "./ThemeProvider";
@@ -28,8 +29,15 @@ export default function Header() {
   return (
     <header className="site-header">
       <div className="container">
-        <Link href="/" className="logo">
-          Heat<span>Schools</span>
+        <Link href="/" className="logo" aria-label="EscuelasCool, inicio del visualizador">
+          <Image
+            src="/images/escuelascool-logo.png"
+            alt="EscuelasCool"
+            width={640}
+            height={160}
+            className="logo-img"
+            priority
+          />
         </Link>
         <nav>
           <ul className="nav-links">

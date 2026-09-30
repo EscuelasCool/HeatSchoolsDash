@@ -6,6 +6,7 @@ import type { GlobalKpis } from "@/lib/aggregates";
 import type { DailyClimateSeries } from "@/lib/climate";
 import type { PieSlice } from "@/lib/distributions";
 import { COUNTRIES } from "@/lib/types";
+import { formatDecimal, formatInteger } from "@/lib/format";
 import { CompactKpiRow } from "./KpiCards";
 import { PieChart, DailyTmaxChart } from "./HomeCharts";
 
@@ -16,14 +17,16 @@ export interface CountryPanelData {
   count: number;
   kpis: {
     count: number;
-    avgTmax: number;
-    avgWellbeing: number;
-    avgHealth: number;
-    avgHeatDays30: number;
+    totalEnrollment: number;
+    avgEnrollment: number;
+    avgAltitude: number;
+    avgTmax2020: number;
+    avgTmax2050: number;
+    urbanSharePct: number;
   };
   distribution: {
-    byLevel: PieSlice[];
-    bySector: PieSlice[];
+    byEnrollmentSize: PieSlice[];
+    bySchoolType: PieSlice[];
     byZone: PieSlice[];
   };
   dailyClimate: DailyClimateSeries;
@@ -34,8 +37,9 @@ interface Props {
   dailyByCountry: Record<CountryCode, DailyClimateSeries>;
   globalDistribution: {
     byCountry: PieSlice[];
-    byLevel: PieSlice[];
-    bySector: PieSlice[];
+    byEnrollmentSize: PieSlice[];
+    bySchoolType: PieSlice[];
+    byZone: PieSlice[];
   };
   countries: CountryPanelData[];
   selected: CountryCode | null;
@@ -56,7 +60,7 @@ export default function HomeStatsPanel({
       <div className="stats-panel-header">
         <span className="stats-eyebrow">{active ? "PAÍS" : "PANORAMA"}</span>
         <h2 className="stats-title">{active ? active.label : "Cifras generales"}</h2>
-        {!active && <p className="stats-subtitle">Chile · Colombia · Perú</p>}
+        {!active && <p className="stats-subtitle">Chile, Colombia y Perú</p>}
       </div>
 
       <div key={panelKey} className="stats-panel-body">
@@ -64,17 +68,24 @@ export default function HomeStatsPanel({
           items={
             active
               ? [
-                  { label: "Escuelas", value: active.kpis.count },
-                  { label: "Tmax", value: `${active.kpis.avgTmax}°C` },
-                  { label: "Bienestar", value: active.kpis.avgWellbeing },
-                  { label: "Salud", value: active.kpis.avgHealth },
-                  { label: "Días ≥30°C", value: active.kpis.avgHeatDays30 },
+                  { label: "Escuelas", value: formatInteger(active.kpis.count) },
+                  {
+                    label: "Estudiantes prom.",
+                    value: formatDecimal(active.kpis.avgEnrollment, 1),
+                  },
+                  { label: "Tmax 2020", value: `${formatDecimal(active.kpis.avgTmax2020, 1)}°C` },
+                  { label: "Tmax 2050", value: `${formatDecimal(active.kpis.avgTmax2050, 1)}°C` },
+                  { label: "Urbano", value: `${active.kpis.urbanSharePct}%` },
                 ]
               : [
-                  { label: "Escuelas", value: globalKpis.totalSchools },
-                  { label: "Tmax", value: `${globalKpis.avgTmax}°C` },
-                  { label: "Bienestar", value: globalKpis.avgWellbeing },
-                  { label: "Salud", value: globalKpis.avgHealth },
+                  { label: "Escuelas", value: formatInteger(globalKpis.totalSchools) },
+                  {
+                    label: "Estudiantes prom.",
+                    value: formatDecimal(globalKpis.avgEnrollment, 1),
+                  },
+                  { label: "Tmax 2020", value: `${formatDecimal(globalKpis.avgTmax2020, 1)}°C` },
+                  { label: "Tmax 2050", value: `${formatDecimal(globalKpis.avgTmax2050, 1)}°C` },
+                  { label: "Urbano", value: `${globalKpis.urbanSharePct}%` },
                 ]
           }
         />
@@ -83,15 +94,11 @@ export default function HomeStatsPanel({
           {active ? (
             <>
               <div className="mini-panel">
-                <h4>Por nivel</h4>
-                <PieChart data={active.distribution.byLevel} />
+                <h4>Tipo de escuela</h4>
+                <PieChart data={active.distribution.bySchoolType} />
               </div>
               <div className="mini-panel">
-                <h4>Por sector</h4>
-                <PieChart data={active.distribution.bySector} />
-              </div>
-              <div className="mini-panel">
-                <h4>Zona</h4>
+                <h4>Urbano / Rural</h4>
                 <PieChart data={active.distribution.byZone} />
               </div>
             </>
@@ -102,12 +109,12 @@ export default function HomeStatsPanel({
                 <PieChart data={globalDistribution.byCountry} />
               </div>
               <div className="mini-panel">
-                <h4>Por nivel</h4>
-                <PieChart data={globalDistribution.byLevel} />
+                <h4>Tipo de escuela</h4>
+                <PieChart data={globalDistribution.bySchoolType} />
               </div>
               <div className="mini-panel">
-                <h4>Por sector</h4>
-                <PieChart data={globalDistribution.bySector} />
+                <h4>Urbano / Rural</h4>
+                <PieChart data={globalDistribution.byZone} />
               </div>
             </>
           )}
@@ -115,15 +122,25 @@ export default function HomeStatsPanel({
 
         <div className={active ? "climate-row-single" : "climate-row-stack"}>
           {active ? (
-            <div className="mini-panel mini-panel-chart">
-              <h4>Tmax diaria · {active.label}</h4>
-              <DailyTmaxChart series={active.dailyClimate} label={active.label} />
+            <div className="mini-panel mini-panel-chart mini-panel-chart--stacked">
+              <h4>Temperatura CMIP6, {active.label}</h4>
+              <DailyTmaxChart
+                series={active.dailyClimate}
+                label={active.label}
+                stackedLayout
+                height={200}
+              />
             </div>
           ) : (
             COUNTRIES.map((c) => (
-              <div key={c.code} className="mini-panel mini-panel-chart">
-                <h4>Tmax diaria · {c.label}</h4>
-                <DailyTmaxChart series={dailyByCountry[c.code]} label={c.label} />
+              <div key={c.code} className="mini-panel mini-panel-chart mini-panel-chart--stacked">
+                <h4>Temperatura CMIP6, {c.label}</h4>
+                <DailyTmaxChart
+                  series={dailyByCountry[c.code]}
+                  label={c.label}
+                  stackedLayout
+                  height={180}
+                />
               </div>
             ))
           )}

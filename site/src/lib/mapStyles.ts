@@ -37,9 +37,9 @@ export const SOUTH_AMERICA_ISOS = [
 ] as const;
 
 export const PROJECT_COUNTRY_COLORS: Record<ProjectCountryIso, string> = {
-  CHL: "#e07a5f",
-  COL: "#f2a154",
-  PER: "#1e4d6b",
+  CHL: "#0653a5",
+  COL: "#f86601",
+  PER: "#023155",
 };
 
 export const COUNTRY_CODE_TO_ISO: Record<"CL" | "CO" | "PE", ProjectCountryIso> = {

@@ -1,12 +1,10 @@
 "use client";
 
 import type { SchoolProperties } from "@/lib/types";
+import { formatInteger } from "@/lib/format";
 import ExportToolbar from "./ExportToolbar";
 import { downloadCsv } from "@/lib/export";
 
-/**
- * Tabla de escuelas filtrada; clic abre el panel de detalle.
- */
 export default function SchoolTable({
   schools,
   onSelect,
@@ -19,17 +17,29 @@ export default function SchoolTable({
   const exportCsv = () => {
     downloadCsv(
       `${exportName}-tabla.csv`,
-      ["school_id", "school_name", "admin1", "level", "sector", "urban_rural", "tmax_avg_c", "wellbeing_score", "health_index"],
+      [
+        "school_id",
+        "school_name",
+        "admin1",
+        "admin2",
+        "sector",
+        "urban_rural",
+        "enrollment",
+        "altitude_m",
+        "tmax_cmip6_2020_c",
+        "tmax_cmip6_2050_c",
+      ],
       schools.map((s) => [
         s.school_id,
         s.school_name,
         s.admin1,
-        s.level,
+        s.admin2,
         s.sector,
         s.urban_rural,
-        s.tmax_avg_c,
-        s.wellbeing_score,
-        s.health_index,
+        s.enrollment,
+        s.altitude_m ?? "",
+        s.tmax_cmip6_2020_c ?? s.tmax_avg_c,
+        s.tmax_cmip6_2050_c ?? "",
       ])
     );
   };
@@ -43,9 +53,11 @@ export default function SchoolTable({
             <tr>
               <th>Escuela</th>
               <th>Región</th>
-              <th>Nivel</th>
-              <th>Tmax avg</th>
-              <th>Bienestar</th>
+              <th>Zona</th>
+              <th>Sector</th>
+              <th>Matrícula</th>
+              <th>Tmax 2020</th>
+              <th>Tmax 2050</th>
             </tr>
           </thead>
           <tbody>
@@ -53,9 +65,11 @@ export default function SchoolTable({
               <tr key={s.school_id} onClick={() => onSelect(s.school_id)}>
                 <td>{s.school_name}</td>
                 <td>{s.admin1}</td>
-                <td>{s.level}</td>
-                <td>{s.tmax_avg_c}°C</td>
-                <td>{s.wellbeing_score}</td>
+                <td>{s.urban_rural}</td>
+                <td>{s.sector || "N/D"}</td>
+                <td>{s.enrollment > 0 ? formatInteger(s.enrollment) : "N/D"}</td>
+                <td>{s.tmax_cmip6_2020_c ?? s.tmax_avg_c}°C</td>
+                <td>{s.tmax_cmip6_2050_c != null ? `${s.tmax_cmip6_2050_c}°C` : "N/D"}</td>
               </tr>
             ))}
           </tbody>

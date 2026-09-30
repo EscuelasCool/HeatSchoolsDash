@@ -4,19 +4,20 @@ export default function HomePage() {
   return (
     <div className="container">
       <section className="hero">
-        <h1 className="hero-tagline">Hacer visible a un asesino silencioso</h1>
+        <h1 className="hero-tagline">
+          Hacer visible una <em>amenaza silenciosa</em>
+        </h1>
         <p className="hero-subtitle">
-          Catalizar la acción política para proteger la salud y el bienestar del estudiantado
-          frente al calor extremo en un clima cambiante en América Latina.
+          Catalizando acción política para proteger la salud y el bienestar de los estudiantes
+          frente al calor extremo en América Latina.
         </p>
       </section>
 
       <HomePageClient />
 
       <div className="disclaimer">
-        <strong>Aviso:</strong> todos los datos mostrados en este dashboard son 100% ficticios
-        y sirven únicamente para probar la interfaz. No deben usarse para análisis ni
-        decisiones de política pública.
+        <strong>Fuentes:</strong> escuelas georeferenciadas (MINEDUC, DANE, MINEDU) y capas CMIP6
+        NEX-GDDP (~0,25°) para temperatura máxima y mínima.
       </div>
     </div>
   );

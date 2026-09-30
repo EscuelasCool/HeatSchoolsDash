@@ -9,6 +9,9 @@ import type { DailyClimateSeries } from "@/lib/climate";
 import ExportToolbar from "./ExportToolbar";
 import { downloadCsv, downloadSvgAsPng, shareLink } from "@/lib/export";
 import { useViewportChartAnimation } from "@/hooks/useViewportChartAnimation";
+import { plotAxisScaleOptions, stylePlotSvg } from "@/lib/plotTheme";
+import { useTheme } from "./ThemeProvider";
+import { formatInteger } from "@/lib/format";
 import { DailyTmaxChart } from "./HomeCharts";
 
 interface BarData {
@@ -25,6 +28,7 @@ export function RegionBarChart({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const { containerRef, progress } = useViewportChartAnimation(900);
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (!ref.current || data.length === 0) return;
@@ -36,11 +40,18 @@ export function RegionBarChart({
       countLabel: d.count,
     }));
 
+    const xAxis = plotAxisScaleOptions(theme);
+    const yAxis = plotAxisScaleOptions(theme);
+
     const chart = Plot.plot({
       marginLeft: 100,
       height: 280,
-      x: { label: "Escuelas", grid: true, domain: [0, Math.max(...data.map((d) => d.count)) * 1.12] },
-      y: { label: null },
+      x: {
+        ...xAxis,
+        label: "Escuelas",
+        domain: [0, Math.max(...data.map((d) => d.count)) * 1.12],
+      },
+      y: { ...yAxis },
       marks: [
         Plot.barX(animated, {
           y: "region",
@@ -51,16 +62,17 @@ export function RegionBarChart({
         Plot.text(animated, {
           y: "region",
           x: "count",
-          text: (d) => String(d.countLabel),
+          text: (d) => formatInteger(d.countLabel),
           dx: 8,
           fill: "var(--color-text-muted)",
           opacity: progress >= 0.85 ? 1 : 0,
         }),
       ],
     });
+    stylePlotSvg(chart.querySelector("svg"), theme);
     ref.current.append(chart);
     return () => chart.remove();
-  }, [data, progress]);
+  }, [data, progress, theme]);
 
   const exportCsv = useCallback(() => {
     downloadCsv(
@@ -77,7 +89,7 @@ export function RegionBarChart({
   }, [exportName]);
 
   const exportShare = useCallback(() => {
-    void shareLink(`Escuelas por región · ${exportName}`, "Distribución de escuelas por región administrativa.");
+    void shareLink(`Escuelas por región, ${exportName}`, "Distribución de escuelas por región administrativa.");
   }, [exportName]);
 
   return (
@@ -102,9 +114,9 @@ export function CountryTmaxChart({
       series={series}
       label={label}
       exportName={exportName}
-      animated
-      showThresholdLines
-      height={360}
+      animated={false}
+      stackedLayout
+      height={220}
       className="daily-chart-wrap--country"
     />
   );
@@ -158,7 +170,7 @@ export function TemperatureDetailChart({
       height: 260,
       marginBottom: 40,
       x: { label: null, type: "utc" },
-      y: { label: "Tmax (°C)", grid: true },
+      y: { label: "Tmax (°C)", grid: false, line: true, tickSize: 6 },
       marks,
     });
     ref.current.append(chart);

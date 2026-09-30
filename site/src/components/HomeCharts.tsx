@@ -6,8 +6,12 @@
 import { useEffect, useRef, useState } from "react";
 import * as Plot from "@observablehq/plot";
 import type { PieSlice } from "@/lib/distributions";
+import { integerPercents } from "@/lib/percentages";
 import type { DailyClimateSeries } from "@/lib/climate";
 import { formatDayLabel } from "@/lib/climate";
+import { formatDecimal } from "@/lib/format";
+import { downsampleDailySeries } from "@/lib/simulatedClimate";
+import { plotAxisScaleOptions, stylePlotSvg } from "@/lib/plotTheme";
 import { useTheme } from "./ThemeProvider";
 import ExportToolbar from "./ExportToolbar";
 import { downloadCsv, downloadSvgAsPng, shareLink } from "@/lib/export";
@@ -16,27 +20,32 @@ import {
   useViewportChartAnimation,
 } from "@/hooks/useViewportChartAnimation";
 
-const PIE_COLORS = ["#e07a5f", "#f2a154", "#1e4d6b", "#6db3d9", "#c05621", "#94a3b8"];
+const PIE_COLORS = ["#0653a5", "#f86601", "#023155", "#05b5dc", "#fbb501", "#5b6770"];
 const WINDOW_DAYS = 30;
-const Y_DOMAIN: [number, number] = [17.5, 27.5];
+/** Radio hasta el centro de la banda del donut (px). */
+const PIE_LABEL_RADIUS = 49;
+/** Gira la posición sobre el anillo (texto sigue horizontal). */
+const PIE_LABEL_POSITION_OFFSET_DEG = -90;
 
 export function PieChart({ data }: { data: PieSlice[] }) {
   const { containerRef, progress } = useViewportChartAnimation(950);
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
+  const pcts = integerPercents(data.map((d) => d.value));
   let acc = 0;
   const stops: string[] = [];
   const labels: { pct: number; midAngle: number; key: string }[] = [];
 
   data.forEach((d, i) => {
-    const finalStart = (acc / total) * 100;
-    acc += d.value;
-    const finalEnd = (acc / total) * 100;
+    const slicePct = pcts[i] ?? 0;
+    const finalStart = acc;
+    acc += slicePct;
+    const finalEnd = acc;
     const start = finalStart * progress;
     const end = finalEnd * progress;
     stops.push(`${PIE_COLORS[i % PIE_COLORS.length]} ${start}% ${end}%`);
     const midAngle = ((finalStart + finalEnd) / 200) * 360 - 90;
     labels.push({
-      pct: Math.round((d.value / total) * 100),
+      pct: slicePct,
       midAngle,
       key: d.label,
     });
@@ -59,10 +68,10 @@ export function PieChart({ data }: { data: PieSlice[] }) {
           aria-label="Gráfico de distribución"
         />
         {labels.map((l) => {
-          if (l.pct < 5) return null;
-          const rad = (l.midAngle * Math.PI) / 180;
-          const x = Math.cos(rad) * 45;
-          const y = Math.sin(rad) * 45;
+          if (l.pct < 3) return null;
+          const rad = ((l.midAngle + PIE_LABEL_POSITION_OFFSET_DEG) * Math.PI) / 180;
+          const x = Math.cos(rad) * PIE_LABEL_RADIUS;
+          const y = Math.sin(rad) * PIE_LABEL_RADIUS;
           return (
             <span
               key={l.key}
@@ -81,7 +90,7 @@ export function PieChart({ data }: { data: PieSlice[] }) {
         {data.map((d, i) => (
           <span key={d.label}>
             <i style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-            {d.label}
+            {d.label} ({pcts[i] ?? 0}%)
           </span>
         ))}
       </div>
@@ -99,6 +108,7 @@ export function DailyTmaxChart({
   showPointValues = false,
   height = 165,
   className,
+  stackedLayout = false,
 }: {
   series: DailyClimateSeries;
   label: string;
@@ -109,61 +119,81 @@ export function DailyTmaxChart({
   showPointValues?: boolean;
   height?: number;
   className?: string;
+  stackedLayout?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { containerRef, progress } = useViewportChartAnimation(1100);
   const { theme } = useTheme();
-  const [windowEnd, setWindowEnd] = useState(() => Math.min(WINDOW_DAYS, series.date.length));
+  const maxWindow = stackedLayout ? series.date.length : WINDOW_DAYS;
+  const [windowEnd, setWindowEnd] = useState(() => Math.min(maxWindow, series.date.length));
 
   useEffect(() => {
-    setWindowEnd(Math.min(WINDOW_DAYS, series.date.length));
-  }, [series.date.length]);
+    setWindowEnd(Math.min(stackedLayout ? series.date.length : WINDOW_DAYS, series.date.length));
+  }, [series.date.length, stackedLayout]);
 
   useEffect(() => {
-    if (!animated || series.date.length <= WINDOW_DAYS) return;
+    if (stackedLayout || !animated || series.date.length <= WINDOW_DAYS) return;
     const timer = window.setInterval(() => {
       setWindowEnd((prev) => (prev >= series.date.length ? WINDOW_DAYS : prev + 1));
     }, 400);
     return () => window.clearInterval(timer);
-  }, [animated, series.date.length]);
+  }, [animated, series.date.length, stackedLayout]);
 
   useEffect(() => {
     if (!ref.current || !series.date.length) return;
     ref.current.innerHTML = "";
 
-    const end = Math.min(windowEnd, series.date.length);
-    const start = Math.max(0, end - WINDOW_DAYS);
-    const sliceDates = series.date.slice(start, end);
-    const sliceTmax = series.tmax_c.slice(start, end);
+    const baseSeries =
+      series.date.length > 500 ? downsampleDailySeries(series, 3) : series;
+
+    const windowSize = stackedLayout ? baseSeries.date.length : WINDOW_DAYS;
+    const end = Math.min(windowEnd, baseSeries.date.length);
+    const start = Math.max(0, end - windowSize);
+    const sliceDates = baseSeries.date.slice(start, end);
+    const sliceTmax = baseSeries.tmax_c.slice(start, end);
+    const sliceLo = baseSeries.tmax_lo?.slice(start, end);
+    const sliceHi = baseSeries.tmax_hi?.slice(start, end);
+    const sliceFc = baseSeries.isForecast?.slice(start, end);
 
     const rows = sliceDates.map((d, i) => ({
-      date: formatDayLabel(d),
+      x: i,
+      date: stackedLayout
+        ? d.endsWith("-01-01")
+          ? d.slice(0, 4)
+          : d.slice(0, 7)
+        : formatDayLabel(d),
       tmax: sliceTmax[i],
+      lo: sliceLo?.[i],
+      hi: sliceHi?.[i],
+      forecast: sliceFc?.[i] ?? false,
     }));
 
-    const stroke = theme === "dark" ? "#f2a154" : "#e07a5f";
-    const gridColor = theme === "dark" ? "#2d3f54" : "#e8e4df";
+    const obsRows = rows.filter((r) => !r.forecast);
+    const fcRows = rows.filter((r) => r.forecast);
+
+    const stroke = theme === "dark" ? "#fbb501" : "#f86601";
     const tickColor = theme === "dark" ? "#94a3b8" : "#5c6370";
-    const pointWidth = 22;
+    const xAxis = plotAxisScaleOptions(theme);
+    const yAxis = plotAxisScaleOptions(theme);
+    const pointWidth = stackedLayout ? 56 : 22;
     const thresholds = series.thresholds;
 
     const yValues = [...sliceTmax];
+    if (sliceLo) yValues.push(...sliceLo);
+    if (sliceHi) yValues.push(...sliceHi);
     if (thresholds) {
       yValues.push(thresholds.p90, thresholds.p95, thresholds.p99);
     }
-    const yPadding = showThresholdLines ? 2 : 1;
+    const yPadding = 1;
     const yMin = Math.floor(Math.min(...yValues) - yPadding);
     const yMax = Math.ceil(Math.max(...yValues) + yPadding);
-    const useCustomYDomain = showThresholdBands || showThresholdLines;
 
     const drawProgress = animated ? progress : 1;
     const visibleCount = Math.max(1, Math.ceil(rows.length * drawProgress));
     const labeledRows = showPointValues ? rows.slice(0, visibleCount) : [];
 
-    const marks: unknown[] = [
-      Plot.gridY({ stroke: gridColor, strokeOpacity: 0.8, ticks: 7 }),
-    ];
+    const marks: unknown[] = [];
 
     if (showThresholdBands && thresholds) {
       const band = [{ x1: -0.5, x2: Math.max(0.5, rows.length - 0.5) }];
@@ -203,27 +233,52 @@ export function DailyTmaxChart({
       );
     }
 
-    marks.push(
-      Plot.lineY(rows, {
-        x: (_d, i) => i,
-        y: "tmax",
-        stroke,
-        strokeWidth: 1.75,
-      }),
-      Plot.dot(rows, {
-        x: (_d, i) => i,
-        y: "tmax",
-        fill: stroke,
-        r: 2.5,
-      })
-    );
+    if (fcRows.length > 0 && fcRows[0].lo != null && fcRows[0].hi != null) {
+      marks.push(
+        Plot.areaY(fcRows, {
+          x: "x",
+          y1: "lo",
+          y2: "hi",
+          fill: theme === "dark" ? "rgba(148,163,184,0.22)" : "rgba(100,116,139,0.2)",
+        })
+      );
+    }
+
+    if (obsRows.length > 0) {
+      marks.push(
+        Plot.lineY(obsRows, {
+          x: "x",
+          y: "tmax",
+          stroke,
+          strokeWidth: 1.75,
+        }),
+        Plot.dot(obsRows, {
+          x: "x",
+          y: "tmax",
+          fill: stroke,
+          r: stackedLayout ? 0 : 2.5,
+        })
+      );
+    }
+
+    if (fcRows.length > 0) {
+      marks.push(
+        Plot.lineY(fcRows, {
+          x: "x",
+          y: "tmax",
+          stroke,
+          strokeWidth: 1.75,
+          strokeDasharray: "6,4",
+        })
+      );
+    }
 
     if (labeledRows.length > 0) {
       marks.push(
         Plot.text(labeledRows, {
           x: (_d, i) => i,
           y: "tmax",
-          text: (d) => `${d.tmax.toFixed(1)}°`,
+          text: (d) => `${formatDecimal(d.tmax, 1)}°`,
           dy: -10,
           fill: tickColor,
           fontSize: 10,
@@ -231,37 +286,31 @@ export function DailyTmaxChart({
       );
     }
 
+    const plotWidth = stackedLayout
+      ? Math.max(280, (ref.current?.parentElement?.clientWidth ?? 480) - 8)
+      : Math.max(320, sliceDates.length * pointWidth);
+
     const chart = Plot.plot({
-      width: Math.max(320, sliceDates.length * pointWidth),
+      width: plotWidth,
       height,
-      marginBottom: 50,
+      marginBottom: stackedLayout ? 44 : 50,
       marginLeft: showThresholdLines ? 52 : 42,
       marginRight: 8,
       x: {
-        label: null,
-        tickRotate: -55,
-        tickSize: 4,
+        ...xAxis,
+        tickRotate: stackedLayout ? 0 : -55,
         tickFormat: (_: string, i: number) => rows[i]?.date ?? "",
       },
       y: {
-        label: null,
-        grid: true,
+        ...yAxis,
         ticks: showThresholdLines ? 8 : 7,
-        tickFormat: (v: number) => `${v}°`,
-        domain: useCustomYDomain ? [yMin, yMax] : Y_DOMAIN,
+        tickFormat: (v: number) => `${formatDecimal(v, 0)}°`,
+        domain: [yMin, yMax],
       },
       marks: marks as Plot.Markish[],
     });
 
-    chart.querySelectorAll("text").forEach((node) => {
-      const el = node as SVGTextElement;
-      if (el.getAttribute("fill") === null || el.getAttribute("fill") === "currentColor") {
-        el.setAttribute("fill", tickColor);
-      }
-      if (!el.getAttribute("font-size")) {
-        el.setAttribute("font-size", "11");
-      }
-    });
+    stylePlotSvg(chart.querySelector("svg"), theme);
 
     ref.current.append(chart);
 
@@ -306,20 +355,29 @@ export function DailyTmaxChart({
   };
 
   const exportShare = () => {
-    void shareLink(`Tmax diaria · ${label}`, `Serie de temperatura máxima diaria para ${label}.`);
+    void shareLink(`Temperatura CMIP6, ${label}`, `Serie de temperatura para ${label}.`);
   };
 
   return (
-    <div ref={containerRef} className={`daily-chart-wrap${className ? ` ${className}` : ""}`}>
+    <div
+      ref={containerRef}
+      className={`daily-chart-wrap${stackedLayout ? " daily-chart-wrap--stacked" : ""}${className ? ` ${className}` : ""}`}
+    >
       <ExportToolbar
         variant="block"
         onShare={exportShare}
         onPng={() => void exportPng()}
         onCsv={exportCsv}
       />
-      <div ref={scrollRef} className="daily-chart-scroll">
+      <div ref={scrollRef} className={stackedLayout ? "daily-chart-fit" : "daily-chart-scroll"}>
         <div ref={ref} className="plot-chart daily-chart" />
       </div>
+      {series.forecastFrom && (
+        <p className="chart-forecast-note">
+          Desde 2026: predicción simulada al 95% (banda gris e intervalo de confianza; línea
+          punteada).
+        </p>
+      )}
     </div>
   );
 }

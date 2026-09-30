@@ -1,21 +1,27 @@
 /**
  * Carga de datos en el navegador desde /public/data (fetch).
- * Evita embeber GeoJSON en el HTML estático de Next.js (límite 25 MiB en Workers).
  */
 import type { CountryCode, CountrySlug, SchoolsGeoJSON, SchoolProperties } from "./types";
 import { COUNTRIES } from "./types";
+import type { Cmip6ClimateSeries } from "./climate";
+import { simulateDailyTmaxSeries } from "./simulatedClimate";
 import type { DailyClimateSeries } from "./climate";
 import { computeCountryKpis, computeGlobalKpis } from "./aggregates";
-import { countByField, schoolsByCountry } from "./distributions";
+import {
+  enrollmentSizeBuckets,
+  schoolsByCountry,
+  schoolTypeBuckets,
+  urbanRuralBuckets,
+} from "./distributions";
 import type { CountryPanelData } from "@/components/HomeStatsPanel";
 import type { CountryMapInfo } from "@/components/SouthAmericaMap";
 import type { SchoolFeature } from "./types";
 import { COUNTRY_CODE_TO_ISO } from "./mapStyles";
 
 const COUNTRY_BLURBS: Record<CountryCode, string> = {
-  CL: "Muestra en regiones del norte, centro y sur. Datos ficticios para el mockup.",
-  CO: "Cobertura en costa, Andes y Orinoquía. Datos ficticios para el mockup.",
-  PE: "Desde la costa hasta la sierra y selva. Datos ficticios para el mockup.",
+  CL: "Directorio MINEDUC georeferenciado; Tmax CMIP6 SSP2-4.5 en escuela.",
+  CO: "Geoestadísticos DANE georeferenciados; Tmax CMIP6 SSP2-4.5 en escuela.",
+  PE: "SIGMED / MINEDU georeferenciado; Tmax CMIP6 SSP2-4.5 en escuela.",
 };
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -36,7 +42,7 @@ async function fetchGzipJson<T>(gzUrl: string, legacyUrl: string): Promise<T> {
 }
 
 export async function fetchSchoolsGeoJSON(slug: CountrySlug): Promise<SchoolsGeoJSON> {
-  return fetchJson(`/data/schools/${slug}.geojson`);
+  return fetchGzipJson(`/data/schools/${slug}.geojson.gz`, `/data/schools/${slug}.geojson`);
 }
 
 export async function fetchSchoolMapGeoJSON(slug: CountrySlug): Promise<SchoolsGeoJSON> {
@@ -46,31 +52,32 @@ export async function fetchSchoolMapGeoJSON(slug: CountrySlug): Promise<SchoolsG
   );
 }
 
-export async function fetchCountryDaily(slug: CountrySlug): Promise<DailyClimateSeries> {
-  return fetchJson(`/data/summary/${slug}_daily.json`);
-}
-
-export async function fetchCountryDailyFull(slug: CountrySlug): Promise<DailyClimateSeries> {
-  return fetchJson(`/data/summary/${slug}_daily_full.json`);
+export async function fetchCountryClimate(slug: CountrySlug): Promise<Cmip6ClimateSeries> {
+  return fetchGzipJson(`/data/summary/${slug}_climate.json.gz`, `/data/summary/${slug}_climate.json`);
 }
 
 export interface CountryDashboardData {
   schools: SchoolProperties[];
   mapFeatures: SchoolFeature[];
+  climateSeries: Cmip6ClimateSeries;
   dailySeries: DailyClimateSeries;
 }
 
 export async function fetchCountryDashboardData(slug: CountrySlug): Promise<CountryDashboardData> {
-  const [schoolsGeo, mapGeo, dailySeries] = await Promise.all([
+  const meta = COUNTRIES.find((c) => c.slug === slug)!;
+  const [schoolsGeo, mapGeo, climateSeries] = await Promise.all([
     fetchSchoolsGeoJSON(slug),
     fetchSchoolMapGeoJSON(slug),
-    fetchCountryDailyFull(slug),
+    fetchCountryClimate(slug),
   ]);
+  const schools = schoolsGeo.features.map((f) => f.properties);
+  const kpis = computeCountryKpis(schools);
 
   return {
-    schools: schoolsGeo.features.map((f) => f.properties),
+    schools,
     mapFeatures: mapGeo.features,
-    dailySeries,
+    climateSeries,
+    dailySeries: simulateDailyTmaxSeries(meta.label, kpis.avgTmax2020, kpis.avgTmax2050),
   };
 }
 
@@ -79,8 +86,9 @@ export interface HomePageData {
   dailyByCountry: Record<CountryCode, DailyClimateSeries>;
   globalDistribution: {
     byCountry: ReturnType<typeof schoolsByCountry>;
-    byLevel: ReturnType<typeof countByField>;
-    bySector: ReturnType<typeof countByField>;
+    byEnrollmentSize: ReturnType<typeof enrollmentSizeBuckets>;
+    bySchoolType: ReturnType<typeof schoolTypeBuckets>;
+    byZone: ReturnType<typeof urbanRuralBuckets>;
   };
   mapCountries: CountryMapInfo[];
   schoolFeatures: SchoolFeature[];
@@ -90,19 +98,21 @@ export interface HomePageData {
 export async function fetchHomePageData(): Promise<HomePageData> {
   const byCountry = await Promise.all(
     COUNTRIES.map(async (c) => {
-      const [schoolsGeo, mapGeo, daily] = await Promise.all([
+      const [schoolsGeo, mapGeo, climate] = await Promise.all([
         fetchSchoolsGeoJSON(c.slug),
         fetchSchoolMapGeoJSON(c.slug),
-        fetchCountryDaily(c.slug),
+        fetchCountryClimate(c.slug),
       ]);
       const schools = schoolsGeo.features.map((f) => f.properties);
       const kpis = computeCountryKpis(schools);
+      const daily = simulateDailyTmaxSeries(c.label, kpis.avgTmax2020, kpis.avgTmax2050);
       return {
         meta: c,
         schools,
         mapFeatures: mapGeo.features,
         daily,
         kpis,
+        climate,
       };
     })
   );
@@ -119,9 +129,9 @@ export async function fetchHomePageData(): Promise<HomePageData> {
     count: c.schools.length,
     kpis: c.kpis,
     distribution: {
-      byLevel: countByField(c.schools, "level"),
-      bySector: countByField(c.schools, "sector"),
-      byZone: countByField(c.schools, "urban_rural"),
+      byEnrollmentSize: enrollmentSizeBuckets(c.schools),
+      bySchoolType: schoolTypeBuckets(c.schools),
+      byZone: urbanRuralBuckets(c.schools),
     },
     dailyClimate: c.daily,
   }));
@@ -131,9 +141,9 @@ export async function fetchHomePageData(): Promise<HomePageData> {
     iso: COUNTRY_CODE_TO_ISO[c.code],
     label: c.label,
     count: c.count,
-    avgTmax: c.kpis.avgTmax,
-    avgWellbeing: c.kpis.avgWellbeing,
-    avgHealth: c.kpis.avgHealth,
+    avgTmax2020: c.kpis.avgTmax2020,
+    avgTmax2050: c.kpis.avgTmax2050,
+    totalEnrollment: c.kpis.totalEnrollment,
     blurb: COUNTRY_BLURBS[c.code],
   }));
 
@@ -142,8 +152,9 @@ export async function fetchHomePageData(): Promise<HomePageData> {
     dailyByCountry,
     globalDistribution: {
       byCountry: schoolsByCountry(allSchools),
-      byLevel: countByField(allSchools, "level"),
-      bySector: countByField(allSchools, "sector"),
+      byEnrollmentSize: enrollmentSizeBuckets(allSchools),
+      bySchoolType: schoolTypeBuckets(allSchools),
+      byZone: urbanRuralBuckets(allSchools),
     },
     mapCountries,
     schoolFeatures: byCountry.flatMap((c) => c.mapFeatures),
