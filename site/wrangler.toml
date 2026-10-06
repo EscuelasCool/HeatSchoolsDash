@@ -1,7 +1,8 @@
 # Cloudflare Workers: sirve el export estático de Next.js (carpeta out/).
 # Build con basePath /escuelascooldash → rutas bajo out/escuelascooldash/.
-# En el dashboard CF: route escuelascool.org/escuelascooldash* → este worker.
-name = "mockup-hsd"
+# URL workers.dev (subdominio de cuenta «escuelascool»): https://dash.escuelascool.workers.dev/escuelascooldash/
+# Ruta futura en escuelascool.org: escuelascool.org/escuelascooldash* → este worker (cuenta del proyecto).
+name = "dash"
 compatibility_date = "2024-09-23"
 
 [assets]
