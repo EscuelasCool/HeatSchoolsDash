@@ -8,10 +8,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && node scripts/stage-base-path.mjs",
+    "build:public": "BUILD_PUBLIC=1 next build && BUILD_PUBLIC=1 node scripts/stage-base-path.mjs",
     "start": "next start",
     "lint": "next lint",
     "deploy": "npm run build && wrangler deploy",
-    "preview:worker": "npm run build && wrangler dev"
+    "deploy:public": "npm run build:public && wrangler deploy -c wrangler.public.toml",
+    "preview:worker": "npm run build && wrangler dev",
+    "preview:public": "npm run build:public && wrangler dev -c wrangler.public.toml"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.29.0",

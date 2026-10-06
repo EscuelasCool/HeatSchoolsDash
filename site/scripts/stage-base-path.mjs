@@ -9,10 +9,14 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const siteRoot = path.resolve(__dirname, "..");
 const outDir = path.join(siteRoot, "out");
-const basePath = (process.env.NEXT_PUBLIC_BASE_PATH ?? "/escuelascooldash").replace(
-  /^\/|\/$/g,
-  ""
-);
+function resolveBasePath() {
+  if (process.env.BUILD_PUBLIC === "1") return "";
+  const raw = process.env.NEXT_PUBLIC_BASE_PATH;
+  if (raw === "") return "";
+  if (raw !== undefined) return raw.replace(/^\/|\/$/g, "");
+  return "escuelascooldash";
+}
+const basePath = resolveBasePath();
 
 if (!basePath) {
   console.log("stage-base-path: sin basePath, omitido.");
