@@ -6,7 +6,6 @@ import {
   CMIP6_TIMELINE_YEARS,
   CMIP6_VARIABLE_LABELS,
   CMIP6_VARIABLE_SHORT,
-  cmip6DataYearForTimeline,
   colorStopsForVariable,
   fetchCmip6Manifest,
   legendGradientForVariable,
@@ -20,10 +19,9 @@ interface Props {
 }
 
 function playableYears(manifest: Cmip6Manifest, sel: Cmip6Selection): number[] {
-  return CMIP6_TIMELINE_YEARS.filter((y) => {
-    const dataYear = cmip6DataYearForTimeline(y);
-    return manifest.frames[`${sel.variable}_${sel.scenario}_${dataYear}`];
-  });
+  return CMIP6_TIMELINE_YEARS.filter(
+    (y) => manifest.frames[`${sel.variable}_${sel.scenario}_${y}`]
+  );
 }
 
 export default function Cmip6TimeControl({ value, onChange }: Props) {

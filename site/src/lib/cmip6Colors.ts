@@ -1,22 +1,22 @@
 import type { CircleLayerSpecification, HeatmapLayerSpecification } from "maplibre-gl";
 import type { Cmip6Variable } from "./cmip6";
 
-/** Parte inferior de la banda (lápices): azules para Tmin. */
+/** Parte inferior de la banda (lápices): azules más claros para Tmin. */
 export const TMIN_COLOR_STOPS = [
-  { value: 0, color: "#023155" },
-  { value: 8, color: "#0653a5" },
-  { value: 14, color: "#05b5dc" },
-  { value: 20, color: "#9adaeb" },
-  { value: 26, color: "#c5e8f5" },
+  { value: 0, color: "#3d6a8c" },
+  { value: 8, color: "#4a8fd4" },
+  { value: 14, color: "#6ecde8" },
+  { value: 20, color: "#b8e8f4" },
+  { value: 26, color: "#dff4fb" },
 ] as const;
 
-/** Parte superior de la banda: naranjos/rojos para Tmax. */
+/** Parte superior de la banda: naranjos/rojos más suaves para Tmax. */
 export const TMAX_COLOR_STOPS = [
-  { value: 18, color: "#fbb501" },
-  { value: 24, color: "#f86601" },
-  { value: 30, color: "#f94102" },
-  { value: 36, color: "#b40b0e" },
-  { value: 42, color: "#7a080a" },
+  { value: 18, color: "#fdd663" },
+  { value: 24, color: "#f9a04d" },
+  { value: 30, color: "#f8784a" },
+  { value: 36, color: "#e85d5d" },
+  { value: 42, color: "#c96a6c" },
 ] as const;
 
 export const CMIP6_TIMELINE_YEARS = [2020, 2025, 2030, 2035, 2040, 2045, 2050] as const;
@@ -38,21 +38,21 @@ export function legendGradientForVariable(variable: Cmip6Variable): string {
 function tmaxCircleColor(): CircleLayerSpecification["paint"] {
   return {
     "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 5, 4, 7, 6, 10, 9, 14],
-    "circle-opacity": 0.82,
+    "circle-opacity": 0.68,
     "circle-color": [
       "interpolate",
       ["linear"],
       ["get", "t"],
       18,
-      "#fbb501",
+      "#fdd663",
       24,
-      "#f86601",
+      "#f9a04d",
       30,
-      "#f94102",
+      "#f8784a",
       36,
-      "#b40b0e",
+      "#e85d5d",
       42,
-      "#7a080a",
+      "#c96a6c",
     ],
     "circle-stroke-width": 0,
   };
@@ -61,21 +61,21 @@ function tmaxCircleColor(): CircleLayerSpecification["paint"] {
 function tminCircleColor(): CircleLayerSpecification["paint"] {
   return {
     "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 5, 4, 7, 6, 10, 9, 14],
-    "circle-opacity": 0.82,
+    "circle-opacity": 0.68,
     "circle-color": [
       "interpolate",
       ["linear"],
       ["get", "t"],
       0,
-      "#023155",
+      "#3d6a8c",
       8,
-      "#0653a5",
+      "#4a8fd4",
       14,
-      "#05b5dc",
+      "#6ecde8",
       20,
-      "#9adaeb",
+      "#b8e8f4",
       26,
-      "#c5e8f5",
+      "#dff4fb",
     ],
     "circle-stroke-width": 0,
   };
@@ -91,50 +91,50 @@ export function heatmapPaintForVariable(
   if (variable === "tasmin") {
     return {
       "heatmap-weight": ["interpolate", ["linear"], ["get", "t"], 0, 0, 30, 1],
-      "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 2, 0.52, 5, 0.58, 8, 0.85, 11, 1.05],
-      "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 2, 7, 4, 11, 7, 18, 10, 26],
-      "heatmap-opacity": 1,
+      "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 1.5, 0.62, 3, 0.52, 6, 0.58, 9, 0.78, 12, 0.92],
+      "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 1.5, 16, 3, 13, 6, 17, 10, 26],
+      "heatmap-opacity": 0.88,
       "heatmap-color": [
         "interpolate",
         ["linear"],
         ["heatmap-density"],
         0,
-        "rgba(2,49,85,0)",
+        "rgba(61,106,140,0)",
         0.1,
-        "rgba(2,49,85,0.2)",
+        "rgba(74,143,212,0.14)",
         0.35,
-        "rgba(6,83,165,0.35)",
+        "rgba(110,205,232,0.22)",
         0.55,
-        "rgba(5,181,220,0.42)",
+        "rgba(184,232,244,0.28)",
         0.75,
-        "rgba(154,218,235,0.48)",
+        "rgba(223,244,251,0.32)",
         1,
-        "rgba(197,232,245,0.55)",
+        "rgba(223,244,251,0.36)",
       ],
     };
   }
 
   return {
     "heatmap-weight": ["interpolate", ["linear"], ["get", "t"], 12, 0, 42, 1],
-    "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 2, 0.52, 5, 0.58, 8, 0.85, 11, 1.05],
+    "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 2, 0.42, 5, 0.48, 8, 0.72, 11, 0.9],
     "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 2, 7, 4, 11, 7, 18, 10, 26],
-    "heatmap-opacity": 1,
+    "heatmap-opacity": 0.88,
     "heatmap-color": [
       "interpolate",
       ["linear"],
       ["heatmap-density"],
       0,
-      "rgba(251,181,1,0)",
+      "rgba(253,214,99,0)",
       0.12,
-      "rgba(251,181,1,0.22)",
+      "rgba(253,214,99,0.16)",
       0.35,
-      "rgba(248,102,1,0.38)",
+      "rgba(249,160,77,0.24)",
       0.55,
-      "rgba(249,65,2,0.44)",
+      "rgba(248,120,74,0.28)",
       0.78,
-      "rgba(180,11,14,0.5)",
+      "rgba(232,93,93,0.32)",
       1,
-      "rgba(122,8,10,0.55)",
+      "rgba(201,106,108,0.36)",
     ],
   };
 }

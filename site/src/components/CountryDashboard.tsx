@@ -142,6 +142,10 @@ export default function CountryDashboard({ country }: Props) {
         features={filteredMapFeatures}
         center={mapSpotlight.center}
         zoom={mapSpotlight.zoom}
+        minZoom={mapSpotlight.minZoom}
+        maxZoom={mapSpotlight.maxZoom}
+        maxBounds={mapSpotlight.maxBounds}
+        countryExplore
         onSchoolClick={setSelectedId}
         exportName={country.route}
         variant="tall"
@@ -156,7 +160,7 @@ export default function CountryDashboard({ country }: Props) {
         <RegionBarChart data={regionData} exportName={country.route} />
       </div>
       <div className="panel country-tmax-panel">
-        <h3>Temperatura CMIP6 SSP2-4.5, media en escuelas (2020, 2050)</h3>
+        <h3>Temperatura CMIP6 SSP2-4.5 — promedios mensuales (2000–2050)</h3>
         <CountryTmaxChart
           series={dailySeries}
           label={country.label}

@@ -169,7 +169,8 @@ export function TemperatureDetailChart({
     const chart = Plot.plot({
       height: 260,
       marginBottom: 40,
-      x: { label: null, type: "utc" },
+      marginRight: 28,
+      x: { label: null, type: "utc", inset: 6 },
       y: { label: "Tmax (°C)", grid: false, line: true, tickSize: 6 },
       marks,
     });

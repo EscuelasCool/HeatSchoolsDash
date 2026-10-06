@@ -54,14 +54,8 @@ export const CMIP6_VARIABLE_SHORT: Record<Cmip6Variable, string> = {
 
 export { CMIP6_TIMELINE_YEARS, colorStopsForVariable, legendGradientForVariable };
 
-/** Año de archivo GeoJSON: hasta 2035 usa banda 2020; desde 2040 usa banda 2050. */
-export function cmip6DataYearForTimeline(timelineYear: number): number {
-  return timelineYear <= 2035 ? 2020 : 2050;
-}
-
 export function frameId(sel: Cmip6Selection): string {
-  const dataYear = cmip6DataYearForTimeline(sel.year);
-  return `${sel.variable}_${sel.scenario}_${dataYear}`;
+  return `${sel.variable}_${sel.scenario}_${sel.year}`;
 }
 
 export function cmip6FrameCacheKey(sel: Cmip6Selection): string {

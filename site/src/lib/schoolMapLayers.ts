@@ -37,6 +37,8 @@ export function installSchoolMapContent(
   options: {
     schools: GeoJSON.FeatureCollection;
     theme: "light" | "dark";
+    clusterMaxZoom?: number;
+    clusterRadius?: number;
   }
 ) {
   removeSchoolMapContent(map);
@@ -48,8 +50,8 @@ export function installSchoolMapContent(
     type: "geojson",
     data: options.schools,
     cluster: true,
-    clusterMaxZoom: 8,
-    clusterRadius: 55,
+    clusterMaxZoom: options.clusterMaxZoom ?? 8,
+    clusterRadius: options.clusterRadius ?? 55,
   });
 
   map.addLayer(
@@ -93,7 +95,7 @@ export function installSchoolMapContent(
       filter: ["!", ["has", "point_count"]],
       paint: {
         "circle-color": "#f86601",
-        "circle-radius": 4,
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 3, 12, 5, 16, 7],
         "circle-stroke-width": 1,
         "circle-stroke-color": clusterStroke,
       },

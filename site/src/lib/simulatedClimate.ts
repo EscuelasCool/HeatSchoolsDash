@@ -4,7 +4,7 @@ function round1(n: number) {
   return Math.round(n * 10) / 10;
 }
 
-/** Serie diaria simulada: estacional + tendencia CMIP6; predicción punteada desde 2026 con IC 95%. */
+/** Promedios mensuales simulados (2000–2050): tendencia ascendente + estacional; forecast desde 2026. */
 export function simulateDailyTmaxSeries(
   country: string,
   tmax2020: number,
@@ -16,34 +16,34 @@ export function simulateDailyTmaxSeries(
   const tmax_hi: number[] = [];
   const isForecast: boolean[] = [];
 
-  const start = new Date(2020, 0, 1);
-  const end = new Date(2050, 11, 31);
-  const cursor = new Date(start);
-  let dayIndex = 0;
+  const delta = tmax2050 - tmax2020;
+  const tmax2000 = tmax2020 - delta * 0.95;
+  const tmaxEnd = tmax2050 + delta * 0.35;
 
-  while (cursor <= end) {
-    const y = cursor.getFullYear();
-    const forecast = y >= 2026;
-    const trend = tmax2020 + ((tmax2050 - tmax2020) * (y - 2020)) / 30;
-    const season = 2.8 * Math.sin((dayIndex / 365.25) * Math.PI * 2 - Math.PI / 2);
-    const noise =
-      0.6 * Math.sin(dayIndex * 0.11) + 0.4 * Math.cos(dayIndex * 0.037 + country.length);
-    const val = trend + season + noise;
-    const icWidth = forecast ? 0.9 + ((y - 2026) / 24) * 1.8 : 0;
+  for (let y = 2000; y <= 2050; y += 1) {
+    for (let m = 0; m < 12; m += 1) {
+      const isFc = y >= 2026;
+      const t = (y - 2000 + m / 12) / 50;
+      const trend = tmax2000 + (tmaxEnd - tmax2000) * t;
+      const season = 1.35 * Math.sin((m / 12) * Math.PI * 2 - Math.PI / 2);
+      const noise =
+        0.18 * Math.sin(y * 0.37 + m * 0.9) +
+        0.1 * Math.cos(m * 0.55 + country.length * 0.3);
+      const val = trend + season + noise;
+      const icWidth = isFc ? 0.5 + ((y - 2026 + m / 12) / 24) * 1.4 : 0;
 
-    date.push(cursor.toISOString().slice(0, 10));
-    tmax_c.push(round1(val));
-    tmax_lo.push(round1(val - icWidth));
-    tmax_hi.push(round1(val + icWidth));
-    isForecast.push(forecast);
-
-    cursor.setDate(cursor.getDate() + 1);
-    dayIndex += 1;
+      const month = String(m + 1).padStart(2, "0");
+      date.push(`${y}-${month}-01`);
+      tmax_c.push(round1(val));
+      tmax_lo.push(round1(val - icWidth));
+      tmax_hi.push(round1(val + icWidth));
+      isForecast.push(isFc);
+    }
   }
 
   return {
     country,
-    resolution: "daily-simulated",
+    resolution: "monthly-simulated",
     date,
     tmax_c,
     tmax_lo,
@@ -53,9 +53,8 @@ export function simulateDailyTmaxSeries(
   };
 }
 
-/** Muestreo para dibujar (~1 punto cada 3 días). */
+/** Muestreo para dibujar series largas. */
 export function downsampleDailySeries(series: DailyClimateSeries, step = 3): DailyClimateSeries {
-  const pick = (arr: number[] | boolean[] | undefined, i: number) => arr?.[i];
   const date: string[] = [];
   const tmax_c: number[] = [];
   const tmax_lo: number[] = [];

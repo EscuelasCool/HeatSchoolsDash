@@ -15,6 +15,7 @@ import ExportToolbar from "./ExportToolbar";
 import Cmip6TimeControl from "./Cmip6TimeControl";
 import type { Cmip6Selection } from "@/lib/cmip6";
 import { useCmip6HeatmapLayer } from "@/hooks/useCmip6HeatmapLayer";
+import { COUNTRY_MAP_FIT_MAX_ZOOM } from "@/lib/countryMapSpotlight";
 
 const POPUP_FADE_MS = 220;
 
@@ -22,6 +23,11 @@ interface Props {
   features: SchoolFeature[];
   center: [number, number];
   zoom: number;
+  minZoom?: number;
+  maxZoom?: number;
+  maxBounds?: maplibregl.LngLatBoundsLike;
+  /** Mapas país: clusters que se abren al acercar (scroll o clic). */
+  countryExplore?: boolean;
   onSchoolClick: (schoolId: string) => void;
   exportName?: string;
   variant?: "default" | "tall";
@@ -42,6 +48,10 @@ export default function SchoolMap({
   features,
   center,
   zoom,
+  minZoom,
+  maxZoom = 22,
+  maxBounds,
+  countryExplore = false,
   onSchoolClick,
   exportName = "escuelas",
   variant = "default",
@@ -54,6 +64,11 @@ export default function SchoolMap({
   const themeRef = useRef<"light" | "dark">("light");
   const mapThemeRef = useRef<"light" | "dark" | null>(null);
   const styleGenerationRef = useRef(0);
+  const initialViewRef = useRef(true);
+  const countryExploreRef = useRef(countryExplore);
+  const maxBoundsRef = useRef(maxBounds);
+  countryExploreRef.current = countryExplore;
+  maxBoundsRef.current = maxBounds;
   const handlersRef = useRef<{
     clickPoints?: (e: maplibregl.MapLayerMouseEvent) => void;
     clickClusters?: (e: maplibregl.MapLayerMouseEvent) => void;
@@ -72,7 +87,14 @@ export default function SchoolMap({
   const [layerEpoch, setLayerEpoch] = useState(0);
   const { theme, mounted } = useTheme();
 
-  useCmip6HeatmapLayer(mapReady ? mapRef.current : null, mapReady, cmip6, layerEpoch);
+  useCmip6HeatmapLayer(
+    mapReady ? mapRef.current : null,
+    mapReady,
+    cmip6,
+    layerEpoch,
+    undefined,
+    countryExplore
+  );
 
   onClickRef.current = onSchoolClick;
   themeRef.current = theme;
@@ -105,10 +127,15 @@ export default function SchoolMap({
     void shareLink(`Mapa EscuelasCool, ${exportName}`, "Mapa de escuelas georeferenciadas.");
   }, [exportName]);
 
+  const clusterMaxZoom = countryExplore ? 14 : 8;
+  const clusterRadius = countryExplore ? 48 : 55;
+
   function restoreMapState(map: maplibregl.Map) {
     installSchoolMapContent(map, {
       schools: geojsonRef.current,
       theme: themeRef.current,
+      clusterMaxZoom,
+      clusterRadius,
     });
     bindSchoolInteractions(map);
     setLayerEpoch((e) => e + 1);
@@ -265,12 +292,30 @@ export default function SchoolMap({
       style: getMapStyleUrl(themeRef.current),
       center,
       zoom,
+      minZoom,
+      maxZoom,
+      maxBounds,
+      dragPan: true,
+      scrollZoom: true,
+      boxZoom: true,
+      doubleClickZoom: true,
+      touchZoomRotate: true,
+      dragRotate: false,
+      touchPitch: false,
+      keyboard: true,
     });
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
     map.on("load", () => {
       restoreMapState(map);
+      if (countryExploreRef.current && maxBoundsRef.current) {
+        map.fitBounds(maxBoundsRef.current, {
+          padding: 56,
+          maxZoom: COUNTRY_MAP_FIT_MAX_ZOOM,
+          duration: 0,
+        });
+      }
       setMapReady(true);
     });
 
@@ -314,6 +359,10 @@ export default function SchoolMap({
   }, [features]);
 
   useEffect(() => {
+    if (initialViewRef.current) {
+      initialViewRef.current = false;
+      return;
+    }
     mapRef.current?.easeTo({ center, zoom, duration: 800 });
   }, [center, zoom]);
 

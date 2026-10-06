@@ -132,6 +132,78 @@
         35.2
       ]
     },
+    "tasmax_ssp585_2025": {
+      "variable": "tasmax",
+      "scenario": "ssp585",
+      "year": 2025,
+      "file": "tasmax_ssp585_2025.geojson.gz",
+      "cells": 25839,
+      "file_mb": 0.137,
+      "t_range": [
+        0.1,
+        36.1
+      ]
+    },
+    "tasmax_ssp585_2030": {
+      "variable": "tasmax",
+      "scenario": "ssp585",
+      "year": 2030,
+      "file": "tasmax_ssp585_2030.geojson.gz",
+      "cells": 25839,
+      "file_mb": 0.137,
+      "t_range": [
+        0.1,
+        35.8
+      ]
+    },
+    "tasmax_ssp585_2035": {
+      "variable": "tasmax",
+      "scenario": "ssp585",
+      "year": 2035,
+      "file": "tasmax_ssp585_2035.geojson.gz",
+      "cells": 25840,
+      "file_mb": 0.137,
+      "t_range": [
+        0.0,
+        35.8
+      ]
+    },
+    "tasmax_ssp585_2040": {
+      "variable": "tasmax",
+      "scenario": "ssp585",
+      "year": 2040,
+      "file": "tasmax_ssp585_2040.geojson.gz",
+      "cells": 25839,
+      "file_mb": 0.137,
+      "t_range": [
+        0.2,
+        36.6
+      ]
+    },
+    "tasmax_ssp585_2045": {
+      "variable": "tasmax",
+      "scenario": "ssp585",
+      "year": 2045,
+      "file": "tasmax_ssp585_2045.geojson.gz",
+      "cells": 25841,
+      "file_mb": 0.137,
+      "t_range": [
+        0.4,
+        36.6
+      ]
+    },
+    "tasmax_ssp585_2050": {
+      "variable": "tasmax",
+      "scenario": "ssp585",
+      "year": 2050,
+      "file": "tasmax_ssp585_2050.geojson.gz",
+      "cells": 25841,
+      "file_mb": 0.137,
+      "t_range": [
+        0.1,
+        37.0
+      ]
+    },
     "tasmin_ssp245_2020": {
       "variable": "tasmin",
       "scenario": "ssp245",
@@ -226,6 +298,78 @@
       "t_range": [
         0.0,
         27.1
+      ]
+    },
+    "tasmin_ssp585_2025": {
+      "variable": "tasmin",
+      "scenario": "ssp585",
+      "year": 2025,
+      "file": "tasmin_ssp585_2025.geojson.gz",
+      "cells": 25329,
+      "file_mb": 0.134,
+      "t_range": [
+        0.0,
+        27.4
+      ]
+    },
+    "tasmin_ssp585_2030": {
+      "variable": "tasmin",
+      "scenario": "ssp585",
+      "year": 2030,
+      "file": "tasmin_ssp585_2030.geojson.gz",
+      "cells": 25315,
+      "file_mb": 0.134,
+      "t_range": [
+        0.0,
+        27.4
+      ]
+    },
+    "tasmin_ssp585_2035": {
+      "variable": "tasmin",
+      "scenario": "ssp585",
+      "year": 2035,
+      "file": "tasmin_ssp585_2035.geojson.gz",
+      "cells": 25363,
+      "file_mb": 0.134,
+      "t_range": [
+        0.0,
+        27.5
+      ]
+    },
+    "tasmin_ssp585_2040": {
+      "variable": "tasmin",
+      "scenario": "ssp585",
+      "year": 2040,
+      "file": "tasmin_ssp585_2040.geojson.gz",
+      "cells": 25431,
+      "file_mb": 0.134,
+      "t_range": [
+        0.0,
+        27.9
+      ]
+    },
+    "tasmin_ssp585_2045": {
+      "variable": "tasmin",
+      "scenario": "ssp585",
+      "year": 2045,
+      "file": "tasmin_ssp585_2045.geojson.gz",
+      "cells": 25442,
+      "file_mb": 0.135,
+      "t_range": [
+        0.0,
+        27.8
+      ]
+    },
+    "tasmin_ssp585_2050": {
+      "variable": "tasmin",
+      "scenario": "ssp585",
+      "year": 2050,
+      "file": "tasmin_ssp585_2050.geojson.gz",
+      "cells": 25494,
+      "file_mb": 0.135,
+      "t_range": [
+        0.0,
+        28.3
       ]
     }
   }

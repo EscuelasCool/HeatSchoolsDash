@@ -22,6 +22,8 @@ import {
 
 const PIE_COLORS = ["#0653a5", "#f86601", "#023155", "#05b5dc", "#fbb501", "#5b6770"];
 const WINDOW_DAYS = 30;
+/** Espacio visual al final del eje X (años o índices). */
+const X_AXIS_END_PAD = 2;
 /** Radio hasta el centro de la banda del donut (px). */
 const PIE_LABEL_RADIUS = 49;
 /** Gira la posición sobre el anillo (texto sigue horizontal). */
@@ -144,8 +146,12 @@ export function DailyTmaxChart({
     if (!ref.current || !series.date.length) return;
     ref.current.innerHTML = "";
 
+    const isMonthly = series.resolution === "monthly-simulated";
+    const downsampleStep = isMonthly ? 2 : 3;
     const baseSeries =
-      series.date.length > 500 ? downsampleDailySeries(series, 3) : series;
+      !stackedLayout && series.date.length > 500
+        ? downsampleDailySeries(series, downsampleStep)
+        : series;
 
     const windowSize = stackedLayout ? baseSeries.date.length : WINDOW_DAYS;
     const end = Math.min(windowEnd, baseSeries.date.length);
@@ -156,18 +162,41 @@ export function DailyTmaxChart({
     const sliceHi = baseSeries.tmax_hi?.slice(start, end);
     const sliceFc = baseSeries.isForecast?.slice(start, end);
 
-    const rows = sliceDates.map((d, i) => ({
-      x: i,
-      date: stackedLayout
-        ? d.endsWith("-01-01")
-          ? d.slice(0, 4)
-          : d.slice(0, 7)
-        : formatDayLabel(d),
-      tmax: sliceTmax[i],
-      lo: sliceLo?.[i],
-      hi: sliceHi?.[i],
-      forecast: sliceFc?.[i] ?? false,
-    }));
+    const rows = sliceDates.map((d, i) => {
+      const [yearStr, monthStr] = d.split("-");
+      const year = Number(yearStr);
+      const month = Number(monthStr);
+      const xYear = year + (month - 1) / 12;
+      return {
+        x: isMonthly ? xYear : i,
+        date: isMonthly
+          ? yearStr
+          : stackedLayout
+            ? d.endsWith("-01-01")
+              ? d.slice(0, 4)
+              : d.slice(0, 7)
+            : formatDayLabel(d),
+        tmax: sliceTmax[i],
+        lo: sliceLo?.[i],
+        hi: sliceHi?.[i],
+        forecast: sliceFc?.[i] ?? false,
+      };
+    });
+
+    const yearTicks: number[] = [];
+    let xDomainMin = 0;
+    let xDomainMax = Math.max(0, rows.length - 1);
+    if (isMonthly && rows.length > 0) {
+      xDomainMin = rows[0].x as number;
+      xDomainMax = (rows[rows.length - 1].x as number) + X_AXIS_END_PAD;
+      const tickStart = Math.floor(xDomainMin);
+      const tickEnd = Math.floor(rows[rows.length - 1].x as number);
+      for (let y = tickStart; y <= tickEnd; y += 5) {
+        yearTicks.push(y);
+      }
+    } else if (rows.length > 0) {
+      xDomainMax = rows.length - 1 + X_AXIS_END_PAD;
+    }
 
     const obsRows = rows.filter((r) => !r.forecast);
     const fcRows = rows.filter((r) => r.forecast);
@@ -176,7 +205,7 @@ export function DailyTmaxChart({
     const tickColor = theme === "dark" ? "#94a3b8" : "#5c6370";
     const xAxis = plotAxisScaleOptions(theme);
     const yAxis = plotAxisScaleOptions(theme);
-    const pointWidth = stackedLayout ? 56 : 22;
+    const pointWidth = stackedLayout ? (isMonthly ? 3.2 : 56) : 22;
     const thresholds = series.thresholds;
 
     const yValues = [...sliceTmax];
@@ -295,12 +324,23 @@ export function DailyTmaxChart({
       height,
       marginBottom: stackedLayout ? 44 : 50,
       marginLeft: showThresholdLines ? 52 : 42,
-      marginRight: 8,
-      x: {
-        ...xAxis,
-        tickRotate: stackedLayout ? 0 : -55,
-        tickFormat: (_: string, i: number) => rows[i]?.date ?? "",
-      },
+      marginRight: isMonthly || stackedLayout ? 36 : 16,
+      x: isMonthly
+        ? {
+            ...xAxis,
+            type: "linear" as const,
+            domain: [xDomainMin, xDomainMax],
+            ticks: yearTicks,
+            tickFormat: (v: number) => String(Math.round(v)),
+            tickRotate: 0,
+          }
+        : {
+            ...xAxis,
+            type: "linear" as const,
+            domain: [xDomainMin, xDomainMax],
+            tickRotate: stackedLayout ? 0 : -55,
+            tickFormat: (_: string, i: number) => rows[i]?.date ?? "",
+          },
       y: {
         ...yAxis,
         ticks: showThresholdLines ? 8 : 7,
@@ -374,7 +414,7 @@ export function DailyTmaxChart({
       </div>
       {series.forecastFrom && (
         <p className="chart-forecast-note">
-          Desde 2026: predicción simulada al 95% (banda gris e intervalo de confianza; línea
+          Histórico mensual desde 2000; desde 2026 predicción simulada al 95% (banda gris; línea
           punteada).
         </p>
       )}

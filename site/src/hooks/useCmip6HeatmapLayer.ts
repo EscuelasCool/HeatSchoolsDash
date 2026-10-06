@@ -17,7 +17,8 @@ export function useCmip6HeatmapLayer(
   mapReady: boolean,
   selection: Cmip6Selection,
   styleEpoch = 0,
-  beforeLayerId?: string
+  beforeLayerId?: string,
+  prefetchTimeline = false
 ) {
   const [loading, setLoading] = useState(false);
   const cacheRef = useRef<Map<string, GeoJSON.FeatureCollection>>(new Map());
@@ -25,7 +26,17 @@ export function useCmip6HeatmapLayer(
 
   useEffect(() => {
     void preloadDefaultCmip6Layer();
-  }, []);
+    if (!prefetchTimeline) return;
+    void fetchCmip6Manifest().then(async (manifest) => {
+      const years = manifest.years.slice().sort((a, b) => a - b);
+      const { variable, scenario } = manifest.default;
+      await Promise.all(
+        years.map((year) =>
+          fetchCmip6Frame({ variable, scenario, year }).catch(() => undefined)
+        )
+      );
+    });
+  }, [prefetchTimeline]);
 
   useEffect(() => {
     if (!map || !mapReady || !map.isStyleLoaded()) return;
