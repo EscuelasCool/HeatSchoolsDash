@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Header from "@/components/Header";
+import { publicUrl } from "@/lib/paths";
 import "@/styles/globals.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -40,14 +41,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </p>
             <div className="footer-wellcome">
               <img
-                src="/images/funded-by-wellcome-black.png"
+                src={publicUrl("/images/funded-by-wellcome-black.png")}
                 alt="Financiado por Wellcome"
                 className="footer-wellcome-img footer-wellcome-img--light"
                 width={280}
                 height={44}
               />
               <img
-                src="/images/funded-by-wellcome-white.png"
+                src={publicUrl("/images/funded-by-wellcome-white.png")}
                 alt="Financiado por Wellcome"
                 className="footer-wellcome-img footer-wellcome-img--dark"
                 width={280}

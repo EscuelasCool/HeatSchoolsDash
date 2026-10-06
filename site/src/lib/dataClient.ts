@@ -17,6 +17,7 @@ import type { CountryPanelData } from "@/components/HomeStatsPanel";
 import type { CountryMapInfo } from "@/components/SouthAmericaMap";
 import type { SchoolFeature } from "./types";
 import { COUNTRY_CODE_TO_ISO } from "./mapStyles";
+import { publicUrl } from "./paths";
 
 const COUNTRY_BLURBS: Record<CountryCode, string> = {
   CL: "Directorio MINEDUC georeferenciado; Tmax CMIP6 SSP2-4.5 en escuela.",
@@ -42,18 +43,24 @@ async function fetchGzipJson<T>(gzUrl: string, legacyUrl: string): Promise<T> {
 }
 
 export async function fetchSchoolsGeoJSON(slug: CountrySlug): Promise<SchoolsGeoJSON> {
-  return fetchGzipJson(`/data/schools/${slug}.geojson.gz`, `/data/schools/${slug}.geojson`);
+  return fetchGzipJson(
+    publicUrl(`/data/schools/${slug}.geojson.gz`),
+    publicUrl(`/data/schools/${slug}.geojson`)
+  );
 }
 
 export async function fetchSchoolMapGeoJSON(slug: CountrySlug): Promise<SchoolsGeoJSON> {
   return fetchGzipJson(
-    `/data/schools-map/${slug}.geojson.gz`,
-    `/data/schools-map/${slug}.geojson`
+    publicUrl(`/data/schools-map/${slug}.geojson.gz`),
+    publicUrl(`/data/schools-map/${slug}.geojson`)
   );
 }
 
 export async function fetchCountryClimate(slug: CountrySlug): Promise<Cmip6ClimateSeries> {
-  return fetchGzipJson(`/data/summary/${slug}_climate.json.gz`, `/data/summary/${slug}_climate.json`);
+  return fetchGzipJson(
+    publicUrl(`/data/summary/${slug}_climate.json.gz`),
+    publicUrl(`/data/summary/${slug}_climate.json`)
+  );
 }
 
 export interface CountryDashboardData {

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
+import { publicUrl } from "@/lib/paths";
 
 type Props = {
   src: string;
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export default function PipelineFigure({ src, alt, width, height, caption }: Props) {
+  const imageSrc = publicUrl(src);
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
 
@@ -41,7 +43,7 @@ export default function PipelineFigure({ src, alt, width, height, caption }: Pro
           aria-label={`Ampliar diagrama: ${alt}`}
         >
           <Image
-            src={src}
+            src={imageSrc}
             alt={alt}
             width={width}
             height={height}
@@ -69,7 +71,7 @@ export default function PipelineFigure({ src, alt, width, height, caption }: Pro
               ×
             </button>
             <Image
-              src={src}
+              src={imageSrc}
               alt={alt}
               width={width}
               height={height}

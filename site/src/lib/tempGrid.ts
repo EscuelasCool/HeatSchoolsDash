@@ -1,4 +1,5 @@
 import type maplibregl from "maplibre-gl";
+import { publicUrl } from "./paths";
 
 export const TEMP_SCENARIOS = [
   { id: "2000-2025", label: "2000–2025", hint: "Histórico", default: true },
@@ -38,7 +39,7 @@ export function tempLegendGradient(): string {
 }
 
 export function tempGridDataUrl(scenario: TempScenarioId): string {
-  return `/data/temp-grid/${scenario}.geojson.gz`;
+  return publicUrl(`/data/temp-grid/${scenario}.geojson.gz`);
 }
 
 export async function fetchTempGrid(scenario: TempScenarioId): Promise<GeoJSON.FeatureCollection> {
@@ -51,7 +52,7 @@ export async function fetchTempGrid(scenario: TempScenarioId): Promise<GeoJSON.F
     return JSON.parse(text) as GeoJSON.FeatureCollection;
   }
 
-  const legacy = await fetch(`/data/temp-grid/${scenario}.geojson`);
+  const legacy = await fetch(publicUrl(`/data/temp-grid/${scenario}.geojson`));
   if (!legacy.ok) throw new Error(`No se pudo cargar la grilla ${scenario}`);
   return legacy.json();
 }

@@ -1,13 +1,20 @@
 import type { NextConfig } from "next";
 
+/** Subdirectorio en escuelascool.org (Cloudflare route: escuelascool.org/escuelascooldash*). */
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "/escuelascooldash";
+
 /**
- * Paso 2 del proyecto: export estático para GitHub Pages / CDN.
- * No hay servidor de aplicación en producción; todo se sirve como archivos estáticos.
+ * Export estático para Cloudflare Workers / CDN.
+ * Con basePath, la salida queda en out/escuelascooldash/.
  */
 const nextConfig: NextConfig = {
+  basePath,
+  assetPrefix: basePath,
+  env: {
+    NEXT_PUBLIC_BASE_PATH: basePath,
+  },
   output: "export",
   images: { unoptimized: true },
-  // DuckDB-WASM y MapLibre requieren transpilar paquetes ESM
   transpilePackages: ["@duckdb/duckdb-wasm"],
 };
 

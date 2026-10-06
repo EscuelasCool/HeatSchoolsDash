@@ -2,6 +2,7 @@ import Image from "next/image";
 import PipelineFigure from "@/components/PipelineFigure";
 import TeamSocialLinks from "@/components/TeamSocialLinks";
 import teamData from "@/data/team.json";
+import { publicUrl } from "@/lib/paths";
 
 const REPO_URL = "https://github.com/JDConejeros/HeatSchoolsDash";
 
@@ -102,7 +103,7 @@ export default function AcercaPage() {
                 <div className="team-photo-wrap">
                   {member.photo ? (
                     <Image
-                      src={member.photo}
+                      src={publicUrl(member.photo)}
                       alt={`Fotografía de ${formatMemberName(member)}`}
                       width={330}
                       height={330}

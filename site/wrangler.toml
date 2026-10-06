@@ -1,5 +1,6 @@
 # Cloudflare Workers: sirve el export estático de Next.js (carpeta out/).
-# No usa OpenNext ni SSR; ver README sección "Despliegue en Cloudflare".
+# Build con basePath /escuelascooldash → rutas bajo out/escuelascooldash/.
+# En el dashboard CF: route escuelascool.org/escuelascooldash* → este worker.
 name = "mockup-hsd"
 compatibility_date = "2024-09-23"
 

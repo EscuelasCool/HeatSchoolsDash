@@ -4,6 +4,7 @@
  * Usa HTTP Range Requests vía httpfs — no descarga el Parquet completo.
  */
 import type { RecentRow } from "./types";
+import { publicUrl } from "./paths";
 
 let dbPromise: Promise<import("@duckdb/duckdb-wasm").AsyncDuckDB> | null = null;
 
@@ -38,7 +39,7 @@ export async function queryRecentSchool(
   const conn = await db.connect();
 
   // Registrar el Parquet remoto/local vía httpfs (Range Requests en producción)
-  const parquetUrl = `${window.location.origin}/data/recent/${countrySlug}.parquet`;
+  const parquetUrl = `${window.location.origin}${publicUrl(`/data/recent/${countrySlug}.parquet`)}`;
   await conn.query(`
     INSTALL httpfs;
     LOAD httpfs;

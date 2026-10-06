@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { publicUrl } from "@/lib/paths";
 import { useTheme } from "./ThemeProvider";
 
 const GITHUB_URL = "https://github.com/JDConejeros/HeatSchoolsDash";
@@ -31,7 +32,7 @@ export default function Header() {
       <div className="container">
         <Link href="/" className="logo" aria-label="EscuelasCool, inicio del visualizador">
           <Image
-            src="/images/escuelascool-logo.png"
+            src={publicUrl("/images/escuelascool-logo.png")}
             alt="EscuelasCool"
             width={640}
             height={160}

@@ -7,6 +7,7 @@ import {
   raiseLayersAboveHeatmap,
   SCHOOL_POINT_LAYERS,
 } from "./tempGrid";
+import { publicUrl } from "./paths";
 import {
   circlePaintForVariable,
   colorStopsForVariable,
@@ -89,7 +90,7 @@ export function preloadDefaultCmip6Layer(): Promise<void> {
 
 export async function fetchCmip6Manifest(): Promise<Cmip6Manifest> {
   if (manifestCache) return manifestCache;
-  const res = await fetch("/data/cmip6/manifest.json");
+  const res = await fetch(publicUrl("/data/cmip6/manifest.json"));
   if (!res.ok) throw new Error("No se pudo cargar manifest CMIP6");
   manifestCache = (await res.json()) as Cmip6Manifest;
   return manifestCache;
@@ -100,7 +101,7 @@ export async function fetchCmip6Frame(sel: Cmip6Selection): Promise<GeoJSON.Feat
   const hit = frameDataCache.get(id);
   if (hit) return hit;
 
-  const gzUrl = `/data/cmip6/${id}.geojson.gz`;
+  const gzUrl = publicUrl(`/data/cmip6/${id}.geojson.gz`);
   const res = await fetch(gzUrl);
   if (!res.ok) throw new Error(`No se pudo cargar capa ${id}`);
 
@@ -110,7 +111,7 @@ export async function fetchCmip6Frame(sel: Cmip6Selection): Promise<GeoJSON.Feat
     const text = await new Response(stream).text();
     data = JSON.parse(text) as GeoJSON.FeatureCollection;
   } else {
-    const legacy = await fetch(`/data/cmip6/${id}.geojson`);
+    const legacy = await fetch(publicUrl(`/data/cmip6/${id}.geojson`));
     if (!legacy.ok) throw new Error(`No se pudo cargar capa ${id}`);
     data = (await legacy.json()) as GeoJSON.FeatureCollection;
   }

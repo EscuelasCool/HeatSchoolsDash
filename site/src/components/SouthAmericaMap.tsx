@@ -21,7 +21,9 @@ import Cmip6TimeControl from "./Cmip6TimeControl";
 import type { Cmip6Selection } from "@/lib/cmip6";
 import { useCmip6HeatmapLayer } from "@/hooks/useCmip6HeatmapLayer";
 
-const SA_GEOJSON_URL = "/data/regions/south-america.geojson";
+import { publicUrl } from "@/lib/paths";
+
+const SA_GEOJSON_URL = publicUrl("/data/regions/south-america.geojson");
 const POPUP_FADE_MS = 220;
 
 /** Límites de pan/zoom: Sudamérica (incl. norte/oriente — Venezuela visible). */
